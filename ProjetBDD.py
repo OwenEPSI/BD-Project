@@ -188,9 +188,10 @@ def enregistrer_resultat_match():
 
 def club_du_joueur_2():
     query = """
-    SELECT t_club.nom_club, tj_joueur_club.date_joueur_rejoin_club, tj_joueur_club.date_joueur_quitte_club
+    SELECT t_joueur.nom_joueur,t_club.nom_club, tj_joueur_club.date_joueur_rejoin_club, tj_joueur_club.date_joueur_quitte_club
     FROM tj_joueur_club 
     JOIN t_club ON tj_joueur_club.id_club = t_club.id_club 
+    JOIN t_joueur ON tj_joueur_club.id_club = t_joueur.id_joueur
     WHERE tj_joueur_club.id_joueur = 2;
     """
     execute_query(query)
@@ -207,23 +208,33 @@ def close_app():
 # Interface graphique avec Tkinter
 root = Tk()
 root.title("Requêtes Tournoi")
-root.geometry("800x600")
+root.geometry("900x700")
+root.configure(bg="#f4f6f8")
+
+style = ttk.Style()
+style.configure("Treeview",
+                font=("Helvetica", 11),
+                rowheight=25,
+                fieldbackground="#f4f6f8",
+                background="#ffffff",
+                foreground="#333333")
+
 
 # Widgets
 title_label = Label(root, text="Interface de requêtes SQL : TOURNOI", font=("Arial", 16))
 title_label.pack(pady=10)
 
 # Frame pour les boutons
-button_frame = Frame(root)
-button_frame.pack(side="top", pady=10)
+button_frame = Frame(root, bg="#f4f6f8")
+button_frame.pack(side="top", pady=20)
 
-Button(root, text="Lister joueurs par club", command=lister_joueurs_par_club, width=30).pack(pady=5)
-Button(root, text="Compter joueurs club n°1", command=compter_joueurs_club_1, width=30).pack(pady=5)
-Button(root, text="Lister équipes tournoi 5", command=lister_equipes_tournoi_5, width=30).pack(pady=5)
-Button(root, text="Calculer buts tournoi 5", command=calculer_total_buts_tournoi_5, width=30).pack(pady=5)
-Button(root, text="Classement tournoi 5", command=classement_final_tournoi_5, width=30).pack(pady=5)
-Button(root, text="Afficher points d'un match", command=enregistrer_resultat_match, width=30).pack(pady=5)
-Button(root, text="Club du joueur 2", command=club_du_joueur_2, width=30).pack(pady=5)
+Button(root, text="Lister joueurs par club", command=lister_joueurs_par_club, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
+Button(root, text="Compter joueurs club n°1", command=compter_joueurs_club_1, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
+Button(root, text="Lister équipes tournoi 5", command=lister_equipes_tournoi_5, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
+Button(root, text="Calculer buts tournoi 5", command=calculer_total_buts_tournoi_5, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
+Button(root, text="Classement tournoi 5", command=classement_final_tournoi_5, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
+Button(root, text="Afficher points d'un match", command=enregistrer_resultat_match, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
+Button(root, text="Club du joueur 2", command=club_du_joueur_2, width=30, height=2, bg="#0078D4", fg="white", font=("Helvetica", 12), relief="flat", cursor="hand2").pack(pady=10)
 # Table pour afficher les résultats
 result_table = ttk.Treeview(root, show="headings", height=10)
 result_table.pack(pady=10)
