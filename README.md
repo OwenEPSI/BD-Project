@@ -1,3 +1,10 @@
+Instructions
+
+    Remplacez votre_utilisateur, votre_mot_de_passe, et votre_base_de_donnees par vos informations MySQL.
+    Vérifiez que les tables (t_joueur, t_club, etc.) et données existent dans votre base.
+    Exécutez le script avec :
+
+python nom_du_script.py
 # BD-Project
 import mysql.connector
 
