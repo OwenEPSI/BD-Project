@@ -1,29 +1,16 @@
-import sqlite3
-from tkinter import *
-
 import mysql.connector
+from tkinter import *
 from tkinter import messagebox
 
-def connect_to_db():
-    try:
-        conn = mysql.connector.connect(
-            host="localhost",         # Ou l'adresse IP de votre serveur MySQL
-            user="root",  # Votre nom d'utilisateur MySQL
-            password="votre_mot_de_passe",  # Votre mot de passe MySQL
-            database="TOURNOI"        # Nom de la base de données
-        )
+# Connexion MySQL
+conn = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="Nassim123",  # Assurez-vous de mettre à jour le mot de passe ici
+    database="coupe_amitie"
+)
 
-        if conn.is_connected():
-            print("Connexion réussie à la base de données")
-            return conn
-        else:
-            print("Impossible de se connecter à la base de données")
-            return None
-
-    except mysql.connector.Error as err:
-        messagebox.showerror("Erreur", f"Erreur de connexion : {err}")
-        return None
-
+cursor = conn.cursor()
 
 # Fonction pour exécuter les requêtes
 def execute_query(query):
@@ -32,7 +19,7 @@ def execute_query(query):
         result = cursor.fetchall()
         display_result(result)
     except Exception as e:
-        display_result([("Erreur", str(e))])
+        display_result([f"Erreur MySQL : {e}"])
 
 # Afficher les résultats dans la zone de texte
 def display_result(result):
@@ -111,64 +98,56 @@ def classement_final_tournoi_5():
     JOIN t_tournoi ON t_match.id_tournoi = t_tournoi.id_tournoi
     WHERE t_tournoi.edition_tournoi = 5 
     GROUP BY t_club.nom_club, t_equipe.nom_equipe
-    ORDER BY total_points DESC, total_buts DESC;
+    ORDER BY total_points , total_buts ;
     """
     execute_query(query)
 
 # Requête 6 : Met à jour les points et les scores d'un match
-def afficher_points_match():
+def enregistrer_resultat_match():
     def confirmer_score():
         try:
             # Récupérer les données saisies
-            id_match = int(id_match_var.get())
-            but_equipe1 = int(but_equipe1_var.get())
-            but_equipe2 = int(but_equipe2_var.get())
+            id_match = int(id_match_var.get().strip())
+            but_equipe1 = int(but_equipe1_var.get().strip())
+            but_equipe2 = int(but_equipe2_var.get().strip())
 
-            # Requête SQL pour calculer les points en fonction des scores saisis
-            select_query = """
-            SELECT 
-                t_match.id_match,
-                t_equipe1.nom_equipe AS equipe1,
-                t_equipe2.nom_equipe AS equipe2,
-                t_match.but_equipe1,
-                t_match.but_equipe2,
-                CASE 
-                    WHEN t_match.but_equipe1 > t_match.but_equipe2 THEN 3
-                    WHEN t_match.but_equipe1 = t_match.but_equipe2 THEN 1
-                    ELSE 0
-                END AS points_equipe1,
-                CASE 
-                    WHEN t_match.but_equipe2 > t_match.but_equipe1 THEN 3
-                    WHEN t_match.but_equipe1 = t_match.but_equipe2 THEN 1
-                    ELSE 0
-                END AS points_equipe2
-            FROM t_match
-            JOIN t_equipe t_equipe1 ON t_match.id_equipe = t_equipe1.id_equipe
-            JOIN t_equipe t_equipe2 ON t_match.id_equipe2 = t_equipe2.id_equipe
-            WHERE t_match.id_match = ?;
+            # Calculer les points pour chaque équipe
+            if but_equipe1 > but_equipe2:
+                point_equipe1 = 3
+                point_equipe2 = 0
+            elif but_equipe1 < but_equipe2:
+                point_equipe1 = 0
+                point_equipe2 = 3
+            else:
+                point_equipe1 = 1
+                point_equipe2 = 1
+
+            # Mettre à jour les scores et les points dans la base de données
+            update_query = """
+            UPDATE t_match
+            SET 
+                but_equipe1 = %s,
+                but_equipe2 = %s,
+                point_equipe1 = %s,
+                point_equipe2 = %s
+            WHERE id_match = %s;
             """
 
-            # Exécution de la requête
-            cursor.execute(select_query, (id_match,))
-            result = cursor.fetchone()
+            # Exécution de la mise à jour
+            cursor.execute(update_query, (but_equipe1, but_equipe2, point_equipe1, point_equipe2, id_match))
+            conn.commit()
 
-            # Vérification du résultat
-            if result:
-                messagebox.showinfo(
-                    "Résultat des points",
-                    f"Match ID : {result['id_match']}\n"
-                    f"Équipe 1 ({result['equipe1']}) : {result['points_equipe1']} points\n"
-                    f"Équipe 2 ({result['equipe2']}) : {result['points_equipe2']} points"
-                )
-            else:
-                messagebox.showwarning(
-                    "Aucun résultat",
-                    f"Aucun match trouvé avec l'ID {id_match}."
-                )
-
+            # Afficher un message de confirmation
+            messagebox.showinfo(
+                "Résultat du match",
+                f"Match ID : {id_match}\n"
+                f"Équipe 1 : {but_equipe1} buts, {point_equipe1} points\n"
+                f"Équipe 2 : {but_equipe2} buts, {point_equipe2} points"
+            )
             popup.destroy()
+
         except ValueError:
-            messagebox.showerror("Erreur", "Veuillez entrer des valeurs valides pour les scores et l'ID.")
+            messagebox.showerror("Erreur", "Les valeurs saisies doivent être des entiers.")
         except Exception as e:
             messagebox.showerror("Erreur", str(e))
 
@@ -194,6 +173,7 @@ def afficher_points_match():
     Button(popup, text="Annuler", command=popup.destroy, bg="red", fg="white").pack(pady=10)
 
 
+
 def club_du_joueur_2():
     query = """
     SELECT t_club.nom_club, tj_joueur_club.date_joueur_rejoin_club, tj_joueur_club.date_joueur_quitte_club
@@ -212,10 +192,6 @@ def close_app():
     conn.close()
     root.destroy()
 
-# Connexion à la base de données SQLite
-conn = sqlite3.connect("TOURNOI.db")
-cursor = conn.cursor()
-
 # Interface graphique avec Tkinter
 root = Tk()
 root.title("Requêtes Tournoi")
@@ -226,21 +202,30 @@ title_label = Label(root, text="Interface de requêtes SQL : TOURNOI", font=("Ar
 title_label.pack(pady=10)
 
 # Boutons pour les requêtes
+button_frame = Frame(root)
+button_frame.pack(side="top", pady=10)
+
 Button(root, text="Lister joueurs par club", command=lister_joueurs_par_club, width=30).pack(pady=5)
 Button(root, text="Compter joueurs club n°1", command=compter_joueurs_club_1, width=30).pack(pady=5)
 Button(root, text="Lister équipes tournoi 5", command=lister_equipes_tournoi_5, width=30).pack(pady=5)
 Button(root, text="Calculer buts tournoi 5", command=calculer_total_buts_tournoi_5, width=30).pack(pady=5)
-Button(root, text="Classement tournoi 5", command=classement_final_tournoi_5, width=30).pack(pady=5)
-Button(root, text="Saisir le score et afficher les points", command=afficher_points_match, width=30).pack(pady=5)
-Button(root, text="Club joueur n°2", command=club_du_joueur_2, width=30).pack(pady=5)
+Button(root, text="Classement final tournoi 5", command=classement_final_tournoi_5, width=30).pack(pady=5)
+Button(root, text="Afficher points d'un match", command=enregistrer_resultat_match, width=30).pack(pady=5)
+Button(root, text="Club du joueur 2", command=club_du_joueur_2, width=30).pack(pady=5)
 
 # Zone d'affichage des résultats
-result_display = Text(root, height=20, width=80, wrap="word", font=("Arial", 12))
+result_display = Text(root, width=100, height=15)
 result_display.pack(pady=10)
 
-scroll = Scrollbar(root, command=result_display.yview)
-result_display.config(yscrollcommand=scroll.set)
-scroll.pack(side="right", fill="y")
+# Fenêtre avec des boutons pour minimiser et fermer
+bottom_frame = Frame(root)
+bottom_frame.pack(side="bottom", pady=10)
+
+Button(bottom_frame, text="Minimiser", command=minimize_window).pack(side="left", padx=10)
+Button(bottom_frame, text="Quitter", command=close_app).pack(side="left", padx=10)
 
 # Lancer l'application
 root.mainloop()
+
+# Ne pas oublier de fermer la connexion à la base de données
+conn.close()
