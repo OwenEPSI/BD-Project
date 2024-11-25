@@ -1,12 +1,13 @@
 import mysql.connector
 from tkinter import *
+from tkinter import ttk
 from tkinter import messagebox
 
-# Connexion MySQL
+# Connexion à la base de données MySQL
 conn = mysql.connector.connect(
-    host="localhost",
+    host="localhost",     # ou l'adresse IP du serveur de base de données
     user="root",
-    password="Nassim123",  # Assurez-vous de mettre à jour le mot de passe ici
+    password="Nassim123",
     database="coupe_amitie"
 )
 
@@ -19,18 +20,29 @@ def execute_query(query):
         result = cursor.fetchall()
         display_result(result)
     except Exception as e:
-        display_result([f"Erreur MySQL : {e}"])
+        display_result([f"Erreur : {e}"])
 
-# Afficher les résultats dans la zone de texte
+# Afficher les résultats dans une Treeview (tableau)
 def display_result(result):
-    result_display.delete("1.0", END)
+    # Vider la table avant d'afficher de nouveaux résultats
+    for row in result_table.get_children():
+        result_table.delete(row)
+    
     if result:
+        # Dynamique : récupérer les colonnes à partir du résultat
+        columns = [desc[0] for desc in cursor.description]  # Récupère les noms de colonnes
+        result_table["columns"] = columns  # Mettre à jour les colonnes de la Treeview
+        for col in columns:
+            result_table.heading(col, text=col, anchor="w")
+            result_table.column(col, width=150, anchor="w")
+        
+        # Ajouter les résultats dans la table
         for row in result:
-            result_display.insert(END, f"{row}\n")
+            result_table.insert("", "end", values=row)
     else:
-        result_display.insert(END, "Aucun résultat trouvé.\n")
+        messagebox.showinfo("Résultat", "Aucun résultat trouvé.")
 
-# Requêtes spécifiques
+# Requête pour lister les joueurs par club
 def lister_joueurs_par_club():
     query = """
     SELECT 
@@ -201,7 +213,7 @@ root.geometry("800x600")
 title_label = Label(root, text="Interface de requêtes SQL : TOURNOI", font=("Arial", 16))
 title_label.pack(pady=10)
 
-# Boutons pour les requêtes
+# Frame pour les boutons
 button_frame = Frame(root)
 button_frame.pack(side="top", pady=10)
 
@@ -209,23 +221,17 @@ Button(root, text="Lister joueurs par club", command=lister_joueurs_par_club, wi
 Button(root, text="Compter joueurs club n°1", command=compter_joueurs_club_1, width=30).pack(pady=5)
 Button(root, text="Lister équipes tournoi 5", command=lister_equipes_tournoi_5, width=30).pack(pady=5)
 Button(root, text="Calculer buts tournoi 5", command=calculer_total_buts_tournoi_5, width=30).pack(pady=5)
-Button(root, text="Classement final tournoi 5", command=classement_final_tournoi_5, width=30).pack(pady=5)
+Button(root, text="Classement tournoi 5", command=classement_final_tournoi_5, width=30).pack(pady=5)
 Button(root, text="Afficher points d'un match", command=enregistrer_resultat_match, width=30).pack(pady=5)
 Button(root, text="Club du joueur 2", command=club_du_joueur_2, width=30).pack(pady=5)
+# Table pour afficher les résultats
+result_table = ttk.Treeview(root, show="headings", height=10)
+result_table.pack(pady=10)
 
-# Zone d'affichage des résultats
-result_display = Text(root, width=100, height=15)
-result_display.pack(pady=10)
-
-# Fenêtre avec des boutons pour minimiser et fermer
-bottom_frame = Frame(root)
-bottom_frame.pack(side="bottom", pady=10)
-
-Button(bottom_frame, text="Minimiser", command=minimize_window).pack(side="left", padx=10)
-Button(bottom_frame, text="Quitter", command=close_app).pack(side="left", padx=10)
+# Zone de défilement pour la table
+scroll = Scrollbar(root, command=result_table.yview)
+result_table.config(yscrollcommand=scroll.set)
+scroll.pack(side="right", fill="y")
 
 # Lancer l'application
 root.mainloop()
-
-# Ne pas oublier de fermer la connexion à la base de données
-conn.close()
